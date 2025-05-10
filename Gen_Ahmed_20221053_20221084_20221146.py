@@ -1,56 +1,113 @@
-# ------------------------  Board basic info --------------------- 
-
 BOARD_SIZE = 15
-EMPTY_CELL = '.'    
-PLAYER_X = 'X'  
-PLAYER_O = 'O'    
+EMPTY_CELL = '.'
+
+
+class Board:
+    def __init__(self):
+        self.grid = [[EMPTY_CELL for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+
+    def display(self):
+        print("\n------------------- Current Board -------------------\n")
+        print("   " + " ".join(f"{i:2}" for i in range(BOARD_SIZE)))
+        for idx, row in enumerate(self.grid):
+            print(f"{idx:2} " + " ".join(row))
+        print("\n-----------------------------------------------------\n")
+
+    def is_valid_move(self, row, col):
+        return 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE and self.grid[row][col] == EMPTY_CELL
+
+    def make_move(self, row, col, symbol):
+        if self.is_valid_move(row, col):
+            self.grid[row][col] = symbol
+            return True
+        return False
+
+    def check_winner(self, symbol):
+        for row in range(BOARD_SIZE):
+            for col in range(BOARD_SIZE):
+                if (
+                    row + 4 < BOARD_SIZE and all(self.grid[row + i][col] == symbol for i in range(5)) or
+                    col + 4 < BOARD_SIZE and all(self.grid[row][col + i] == symbol for i in range(5)) or
+                    row + 4 < BOARD_SIZE and col + 4 < BOARD_SIZE and all(self.grid[row + i][col + i] == symbol for i in range(5)) or
+                    row + 4 < BOARD_SIZE and col - 4 >= 0 and all(self.grid[row + i][col - i] == symbol for i in range(5))
+                ):
+                    return True
+        return False
+
+
+class Player:
+    def __init__(self, symbol, is_ai=False, ai_name=None):
+        self.symbol = symbol
+        self.is_ai = is_ai
+        self.ai_name = ai_name  #  minimax or alphabeta 
+
+
+class GomokuGame:
+    def __init__(self, player1, player2):
+        self.board = Board()
+        self.player1 = player1
+        self.player2 = player2
+        self.current_player = self.player1
+
+    def switch_turn(self):
+        self.current_player = self.player2 if self.current_player == self.player1 else self.player1
+
+    def play(self):
+        while True:
+            self.board.display()
+            print(f"Player {self.current_player.symbol}'s turn.")
+
+            if self.current_player.is_ai:
+                print(f"Current player is AI ({self.current_player.ai_name})")
+                ###### AI move 
+            else:
+                try:
+                    row_col = input("Enter your move (row col) or 'exit': ").strip()
+                    if row_col.lower() == 'exit':
+                        print("Game exited.")
+                        break
+                    row, col = map(int, row_col.split())
+                except ValueError:
+                    print("Invalid input. Please enter two numbers separated by space like  1 1.")
+                    continue
+
+                if not self.board.make_move(row, col, self.current_player.symbol):
+                    print("Invalid move. Try again.")
+                    continue
+
+                if self.board.check_winner(self.current_player.symbol):
+                    self.board.display()
+                    print(f"🏆 Player {self.current_player.symbol} wins!")
+                    break
+
+            self.switch_turn()
 
 
 
 
-def create_board():
-    return [[EMPTY_CELL for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+if __name__ == "__main__":
+    while True:
+        print("====== Gomoku Game ======")
+        print("1. Human vs AI (Minimax)")
+        print("2. AI (Minimax) vs AI (Alpha-Beta)")
+        print("3. Exit")
+        choice = input("Select mode (1-3): ").strip()
 
-def print_board(board):
-    for i, row in enumerate(board):
-        print( " ".join(row))
+        if choice == '1':
+            player1 = Player('X')  
+            player2 = Player('O', is_ai=True, ai_name="minimax")
+            game = GomokuGame(player1, player2)
+            game.play()
 
-def is_valid_move(board, row, col):
-    return 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE and board[row][col] == EMPTY_CELL
+        elif choice == '2':
+            player1 = Player('X', is_ai=True, ai_name="minimax")
+            player2 = Player('O', is_ai=True, ai_name="alphabeta")
+            game = GomokuGame(player1, player2)
+            game.play()
 
-def move(board, x, y, player):
-    if is_valid_move(board, x, y):
-        board[x][y] = player
-        return True  
-    return False  
+        elif choice == '3':
+            print("Thanks for playing Gomoku!")
+            break
 
-
-def check_is_winner(board, player):
-    for row in range(BOARD_SIZE):
-        for col in range(BOARD_SIZE):
-            # horizontal  5  
-            if row + 4 < BOARD_SIZE and all(board[row + i][col] == player for i in range(5)):
-                return True
-            #   vertical
-            if col + 4 < BOARD_SIZE and all(board[row][col + i] == player for i in range(5)):
-                return True
-            # ↘
-            if row + 4 < BOARD_SIZE and col + 4 < BOARD_SIZE and all(board[row + i][col + i] == player for i in range(5)):
-                return True
-            #  ↙
-            if row + 4 < BOARD_SIZE and col - 4 >= 0 and all(board[row + i][col - i] == player for i in range(5)):
-                return True
-    return False 
-
-
-
-
-#  test board 
-board = create_board()
-
-print_board(board)
-
-  print("\nBoard after play in  7 7 ")
-
-move(board, 7, 7, PLAYER_X)
-print_board(board)
+        else:
+            print(" Please Only  choose 1, 2, or 3.")
