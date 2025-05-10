@@ -33,6 +33,9 @@ class Board:
                 ):
                     return True
         return False
+   
+    def get_empty_cells(self):
+        return [(r, c) for r in range(BOARD_SIZE) for c in range(BOARD_SIZE) if self.grid[r][c] == EMPTY_CELL]
 
 
 class Player:
