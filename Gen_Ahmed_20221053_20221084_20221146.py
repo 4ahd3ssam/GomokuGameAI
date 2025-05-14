@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import messagebox
 from functools import partial
@@ -6,7 +5,6 @@ import math
 
 BOARD_SIZE = 15
 EMPTY_CELL = '.'
-
 
 
 class MiniMax:
@@ -42,7 +40,7 @@ class MiniMax:
         elif self.board.check_winner(self.minimizer.symbol):  # If minimizer wins
             return -1
         elif depth == 0 or not self.board.get_empty_cells():  # If no more depth or the game is over
-            return 0  # Draw or depth limit
+            return self.board.evaluate(self.maximizer.symbol)
 
         if isMaximizing:  # Maximizer turn
             bestScore = -math.inf  # MIN_INT
@@ -90,7 +88,7 @@ class AlphaBeta:
         elif self.board.check_winner(self.minimizer.symbol):
             return -1
         elif depth == 0 or not self.board.get_empty_cells():
-            return 0
+            return self.board.evaluate(self.maximizer.symbol)
 
         if isMaximizing:
             value = -math.inf
@@ -114,7 +112,6 @@ class AlphaBeta:
             return value
 
 
-
 class Board:
     def __init__(self, board_size=BOARD_SIZE):
         self.board_size = board_size
@@ -128,7 +125,7 @@ class Board:
         print("\n-----------------------------------------------------\n")
 
     def is_valid_move(self, row, col):
-        return 0 <= row <  self.board_size and 0 <= col <  self.board_size and self.grid[row][col] == EMPTY_CELL
+        return 0 <= row < self.board_size and 0 <= col < self.board_size and self.grid[row][col] == EMPTY_CELL
 
     def make_move(self, row, col, symbol):
         if self.is_valid_move(row, col):
@@ -137,27 +134,64 @@ class Board:
         return False
 
     def check_winner(self, symbol):
-        for row in range( self.board_size):
-            for col in range( self.board_size):
+        for row in range(self.board_size):
+            for col in range(self.board_size):
                 # Check horizontal (left to right)
-                if col + 4 <  self.board_size and all(self.grid[row][col + i] == symbol for i in range(5)):
+                if col + 4 < self.board_size and all(self.grid[row][col + i] == symbol for i in range(5)):
                     return True
                 # Check vertical (top to bottom)
-                if row + 4 <  self.board_size and all(self.grid[row + i][col] == symbol for i in range(5)):
+                if row + 4 < self.board_size and all(self.grid[row + i][col] == symbol for i in range(5)):
                     return True
                 # Check diagonal (top-left to bottom-right)
-                if row + 4 <  self.board_size and col + 4 <  self.board_size and all(
+                if row + 4 < self.board_size and col + 4 < self.board_size and all(
                         self.grid[row + i][col + i] == symbol for i in range(5)):
                     return True
                 # Check diagonal (top-right to bottom-left)
-                if row + 4 <  self.board_size and col - 4 >= 0 and all(
+                if row + 4 < self.board_size and col - 4 >= 0 and all(
                         self.grid[row + i][col - i] == symbol for i in range(5)):
                     return True
         return False
 
     def get_empty_cells(self):
-        return [(r, c) for r in range( self.board_size) for c in range( self.board_size) if self.grid[r][c] == EMPTY_CELL]
+        return [(r, c) for r in range(self.board_size) for c in range(self.board_size) if self.grid[r][c] == EMPTY_CELL]
 
+    def evaluate_direction(self, r, c, player, opponent, dr, dc):
+        max_len = 5
+        if not (0 <= r + (max_len - 1) * dr < self.board_size) or not (0 <= c + (max_len - 1) * dc < self.board_size):
+            return 0
+
+        line = [self.grid[r + i * dr][c + i * dc] for i in range(max_len)]
+
+        if opponent not in line:
+            player_count = line.count(player)
+            if player_count == 2:
+                return 10
+            elif player_count == 3:
+                return 50
+            elif player_count == 4:
+                return 200
+        if player not in line:
+            opp_count = line.count(opponent)
+            if opp_count == 2:
+                return -10
+            elif opp_count == 3:
+                return -50
+            elif opp_count == 4:
+                return -200
+        return 0
+
+    def evaluate(self, symbol):
+        opponent = 'O' if symbol == 'X' else 'X'
+        score = 0
+
+        for r in range(self.board_size):
+            for c in range(self.board_size):
+                score += self.evaluate_direction(r, c, symbol, opponent, 0, 1)   # horizontal
+                score += self.evaluate_direction(r, c, symbol, opponent, 1, 0)   # vertical
+                score += self.evaluate_direction(r, c, symbol, opponent, 1, 1)   # diag ↘
+                score += self.evaluate_direction(r, c, symbol, opponent, 1, -1)  # diag ↙
+
+        return score
 
 class Player:
     def __init__(self, symbol, is_ai=False, ai_name=None):
@@ -220,10 +254,6 @@ class GomokuGame:
             self.switch_turn()
 
 
-
-
-
-
 # Test Without GUI
 # if __name__ == "__main__":
 #     while True:
@@ -251,9 +281,6 @@ class GomokuGame:
 #
 #         else:
 #             print(" Please Only  choose 1, 2, or 3.")
-
-
-
 
 
 # ---------------------------------<<        GUI       >> -----------------------------
@@ -293,37 +320,39 @@ class Menu:
             "cursor": "hand2"
         }
 
-        self.button1 = tk.Button(top_frame, text="👤  Human vs AI (Minimax)", command=self.get_board_size,
+        self.button1 = tk.Button(top_frame, text="👤  Human vs AI (Minimax)",
+                                 command=lambda: self.get_board_size("human_vs_ai"),
                                  **button_style)
         self.button1.pack(pady=10)
 
-        self.button2 = tk.Button(top_frame, text="🤖  AI (Minimax) vs AI (Alpha-Beta)", command=self.get_board_size,
+        self.button2 = tk.Button(top_frame, text="🤖  AI (Minimax) vs AI (Alpha-Beta)",
+                                 command=lambda: self.get_board_size("ai_vs_ai"),
                                  **button_style)
         self.button2.pack(pady=10)
 
         self.button3 = tk.Button(top_frame, text="❌  Exit", command=root.quit, **button_style)
         self.button3.pack(pady=10)
 
-    def get_board_size(self):
-
+    def get_board_size(self, mode):
+        self.selected_mode = mode
         # to make child window
         self.board_size_window = tk.Toplevel(self.root)
         self.board_size_window.title("Enter Board Size")
 
-
         window_width = 400
         window_height = 200
         screen_width = self.root.winfo_screenwidth()
-        x_coordinate = (screen_width - window_width) // 2  #  to center the window
-
+        x_coordinate = (screen_width - window_width) // 2  # to center the window
 
         self.board_size_window.geometry(f"{window_width}x{window_height}+{x_coordinate}+100")
         self.board_size_window.configure(bg="#1E88E5")
-        label = tk.Label(self.board_size_window, text="Enter Board Size :", font=("Segoe UI", 14,"bold"),fg="white" , bg="#1E88E5")
+        label = tk.Label(self.board_size_window, text="Enter Board Size :", font=("Segoe UI", 14, "bold"), fg="white",
+                         bg="#1E88E5")
         label.pack(pady=20)
         self.board_size_entry = tk.Entry(self.board_size_window, font=("Segoe UI", 14))
         self.board_size_entry.pack(pady=10)
-        button = tk.Button(self.board_size_window, text=" Start Game ", font=("Segoe UI", 14,"bold"), command=self.start_game  , bg="white")
+        button = tk.Button(self.board_size_window, text=" Start Game ", font=("Segoe UI", 14, "bold"),
+                           command=self.start_game, bg="white")
         button.pack(pady=10)
 
     def start_game(self):
@@ -333,7 +362,7 @@ class Menu:
                 self.board_size_window.destroy()  # Close  board size window
                 self.root.destroy()  # Close  menu window
                 new_root = tk.Tk()
-                GomokuGUI(new_root, board_size)  # Pass the board size to GomokuGUI
+                GomokuGUI(new_root, board_size, self.selected_mode)  # Pass the board size to GomokuGUI
                 new_root.mainloop()
             else:
                 messagebox.showerror("Invalid Size", "Please enter a size between 5 and 20.")
@@ -341,32 +370,45 @@ class Menu:
             messagebox.showerror("Invalid Input", "Please enter a valid number for the board size.")
 
 
-
-
 class GomokuGUI:
-    def __init__(self, root, board_size):
+    def __init__(self, root, board_size, mode):
         self.root = root
         self.board_size = board_size
-        self.root.title("Gomoku Game ")
+        self.root.title("Gomoku Game")
         self.board = Board(self.board_size)
-        self.player1 = Player('X')
-        self.player2 = Player('O', is_ai=True, ai_name="minimax")
-        self.current_player = self.player1
+        self.mode = mode
+        self.set_players(mode)
+        # self.player1 = Player('X')
+        # self.player2 = Player('O', is_ai=True, ai_name="minimax")
+        # self.current_player = self.player1
         self.buttons = [[None for _ in range(self.board_size)] for _ in range(self.board_size)]
         window_width = root.winfo_screenwidth()
         window_height = root.winfo_screenheight()
         root.geometry(f"{window_width}x{window_height}+0+0")
-        self.status_label = tk.Label(self.root, text="Welcome to Gomoku!", font=("Arial", 20 , "bold"), bg="#1E88E5", fg="white")
-        self.status_label.pack(pady= (10,0))
+        self.status_label = tk.Label(self.root, text="Welcome to Gomoku!", font=("Arial", 20, "bold"), bg="#1E88E5",
+                                     fg="white")
+        self.status_label.pack(pady=(10, 0))
 
         self.root.configure(bg="#1E88E5")
         self.create_widgets()
+
+        # To start AI vs AI
+        if self.player1.is_ai and self.player2.is_ai:
+            self.root.after(500, self.minMax_move)
+
+    def set_players(self, mode):
+        if mode == "human_vs_ai":
+            self.player1 = Player('X')  # human
+            self.player2 = Player('O', is_ai=True, ai_name="minimax")
+        elif mode == "ai_vs_ai":
+            self.player1 = Player('X', is_ai=True, ai_name="minimax")
+            self.player2 = Player('O', is_ai=True, ai_name="alphabeta")
+        self.current_player = self.player1
 
     def create_widgets(self):
 
         self.board_frame = tk.Frame(self.root, bg="#1E88E5")
         self.board_frame.pack(expand=True)  # frame is centered in the window
-
 
         for r in range(self.board_size):
             for c in range(self.board_size):
@@ -381,7 +423,6 @@ class GomokuGUI:
     def cell_clicked(self, row, col):
         if not self.board.is_valid_move(row, col) or self.current_player.is_ai:
             return
-
 
         self.board.make_move(row, col, self.current_player.symbol)
         self.buttons[row][col]['text'] = self.current_player.symbol
@@ -399,8 +440,14 @@ class GomokuGUI:
     def minMax_move(self):
         # Check if it's AI's turn to move
         if self.current_player.is_ai:
-            minimax = MiniMax(self.board, self.player1, self.player2)
-            bestMove = minimax.getBestMove()  # Get the best move for the AI (minimax)
+            if self.current_player.ai_name == "minimax":
+                ai = MiniMax(self.board, self.player1, self.player2)
+            elif self.current_player.ai_name == "alphabeta":
+                ai = AlphaBeta(self.board, self.player2, self.player1)
+            else:
+                return
+
+            bestMove = ai.getBestMove()
 
             # Make the move on the board
             self.board.make_move(bestMove[0], bestMove[1], self.current_player.symbol)
@@ -421,7 +468,6 @@ class GomokuGUI:
             # Proceed with the next AI move (if needed) after a short delay
             self.root.after(500, self.minMax_move)  # AI takes the next turn after a delay
 
-
     def switch_turn(self):
         self.current_player = self.player2 if self.current_player == self.player1 else self.player1
 
@@ -435,8 +481,6 @@ class GomokuGUI:
             self.root.quit()
             return True
         return False
-
-
 
 
 if __name__ == "__main__":
