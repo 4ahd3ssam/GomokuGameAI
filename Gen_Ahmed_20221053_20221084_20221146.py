@@ -71,7 +71,7 @@ class AlphaBeta:
         bestScore = -math.inf
         bestMove = None
 
-        for row, col in self.board.get_empty_cells():
+        for row, col in self.board.get_candidate_moves():
             self.board.make_move(row, col, self.maximizer.symbol)
             score = self.alphabeta(self.maxDepth - 1, -math.inf, math.inf, False)
             self.board.grid[row][col] = EMPTY_CELL
@@ -92,7 +92,7 @@ class AlphaBeta:
 
         if isMaximizing:
             value = -math.inf
-            for row, col in self.board.get_empty_cells():
+            for row, col in self.board.get_candidate_moves():
                 self.board.make_move(row, col, self.maximizer.symbol)
                 value = max(value, self.alphabeta(depth - 1, alpha, beta, False))
                 self.board.grid[row][col] = EMPTY_CELL
@@ -102,7 +102,7 @@ class AlphaBeta:
             return value
         else:
             value = math.inf
-            for row, col in self.board.get_empty_cells():
+            for row, col in self.board.get_candidate_moves():
                 self.board.make_move(row, col, self.minimizer.symbol)
                 value = min(value, self.alphabeta(depth - 1, alpha, beta, True))
                 self.board.grid[row][col] = EMPTY_CELL
@@ -154,6 +154,22 @@ class Board:
 
     def get_empty_cells(self):
         return [(r, c) for r in range(self.board_size) for c in range(self.board_size) if self.grid[r][c] == EMPTY_CELL]
+
+    def get_candidate_moves(self, distance=2):
+        candidates = set()
+
+        for r in range(self.board_size):
+            for c in range(self.board_size):
+                if self.grid[r][c] != EMPTY_CELL:
+                    for dr in range(-distance, distance + 1):
+                        for dc in range(-distance, distance + 1):
+                            nr, nc = r + dr, c + dc
+                            if 0 <= nr < self.board_size and 0 <= nc < self.board_size:
+                                if self.grid[nr][nc] == EMPTY_CELL:
+                                    candidates.add((nr, nc))
+
+        # Fallback to full board if no moves are near existing stones (e.g., empty board)
+        return list(candidates) if candidates else self.get_empty_cells()
 
     def evaluate_direction(self, r, c, player, opponent, dr, dc):
         max_len = 5
