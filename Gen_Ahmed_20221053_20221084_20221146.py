@@ -62,6 +62,59 @@ class MiniMax:
             return bestScore
 
 
+class AlphaBeta:
+    def __init__(self, board, maximizer, minimizer, maxDepth=2):
+        self.board = board
+        self.maximizer = maximizer
+        self.minimizer = minimizer
+        self.maxDepth = maxDepth
+
+    def getBestMove(self):
+        bestScore = -math.inf
+        bestMove = None
+
+        for row, col in self.board.get_empty_cells():
+            self.board.make_move(row, col, self.maximizer.symbol)
+            score = self.alphabeta(self.maxDepth - 1, -math.inf, math.inf, False)
+            self.board.grid[row][col] = EMPTY_CELL
+
+            if score > bestScore:
+                bestScore = score
+                bestMove = (row, col)
+
+        return bestMove
+
+    def alphabeta(self, depth, alpha, beta, isMaximizing):
+        if self.board.check_winner(self.maximizer.symbol):
+            return 1
+        elif self.board.check_winner(self.minimizer.symbol):
+            return -1
+        elif depth == 0 or not self.board.get_empty_cells():
+            return 0
+
+        if isMaximizing:
+            value = -math.inf
+            for row, col in self.board.get_empty_cells():
+                self.board.make_move(row, col, self.maximizer.symbol)
+                value = max(value, self.alphabeta(depth - 1, alpha, beta, False))
+                self.board.grid[row][col] = EMPTY_CELL
+                alpha = max(alpha, value)
+                if beta <= alpha:
+                    break  # beta cut-off
+            return value
+        else:
+            value = math.inf
+            for row, col in self.board.get_empty_cells():
+                self.board.make_move(row, col, self.minimizer.symbol)
+                value = min(value, self.alphabeta(depth - 1, alpha, beta, True))
+                self.board.grid[row][col] = EMPTY_CELL
+                beta = min(beta, value)
+                if beta <= alpha:
+                    break  # alpha cut-off
+            return value
+
+
+
 class Board:
     def __init__(self, board_size=BOARD_SIZE):
         self.board_size = board_size
@@ -138,6 +191,10 @@ class GomokuGame:
 
                 elif self.current_player.ai_name == "alphabeta":
                     # Implement Alpha-Beta logic here
+                    alphabeta = AlphaBeta(self.board, self.player2, self.player1)
+                    bestMove = alphabeta.getBestMove()
+                    print(f"AI ({self.current_player.symbol}) chooses move: {bestMove}")
+                    self.board.make_move(bestMove[0], bestMove[1], self.current_player.symbol)
                     pass
 
             else:
