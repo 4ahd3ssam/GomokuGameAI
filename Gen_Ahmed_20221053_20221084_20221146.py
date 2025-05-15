@@ -9,54 +9,51 @@ EMPTY_CELL = '.'
 
 class MiniMax:
     def __init__(self, board, maximizer, minimizer, maxDepth=1):
-        self.board = board  # Instance of the current board state
-        self.maximizer = maximizer  # Player 'O', trie to maximize their score
-        self.minimizer = minimizer  # Opponent 'X', trie to minimze the maximizer score
-        self.maxDepth = maxDepth  # Maximum number of moves to explore
+        self.board = board
+        self.maximizer = maximizer
+        self.minimizer = minimizer
+        self.maxDepth = maxDepth
 
     def getBestMove(self):
-        bestScore = -math.inf  # MIN_INT
+        bestScore = -math.inf
         bestMove = None
 
-        for row, col in self.board.get_empty_cells():  # Iterate over all empty cells
-            self.board.make_move(row, col, self.maximizer.symbol)  # Make move
-            score = self.minimax(self.maxDepth - 1, False)  # Get the best
-            self.board.grid[row][col] = EMPTY_CELL  # Undo move
+        for row, col in self.board.get_empty_cells():
+            self.board.make_move(row, col, self.maximizer.symbol)
+            score = self.minimax(self.maxDepth - 1, False)
+            self.board.grid[row][col] = EMPTY_CELL
 
-            if score > bestScore:  # If this is the maximum score
+            if score > bestScore:
                 bestScore = score
-                bestMove = (row, col)  # Get its cell
+                bestMove = (row, col)
 
-        return bestMove  # return the best move for the maximizer
+        return bestMove
 
-    # Algorithm to determine the best move of a player
-    # Maximize the player score
-    # Minimze the opponent score
-    # Based on DFS "try all possible future moves", but limited to the depth
+
     def minimax(self, depth, isMaximizing):
         # Base cases
-        if self.board.check_winner(self.maximizer.symbol):  # If maximizer wins
+        if self.board.check_winner(self.maximizer.symbol):
             return 1
-        elif self.board.check_winner(self.minimizer.symbol):  # If minimizer wins
+        elif self.board.check_winner(self.minimizer.symbol):
             return -1
         elif depth == 0 or not self.board.get_empty_cells():  # If no more depth or the game is over
             return self.board.evaluate(self.maximizer.symbol)
 
-        if isMaximizing:  # Maximizer turn
-            bestScore = -math.inf  # MIN_INT
-            for row, col in self.board.get_empty_cells():  # Iterate over all possible moves
-                self.board.make_move(row, col, self.maximizer.symbol)  # Make a move
-                score = self.minimax(depth - 1, False)  # Switch to the opponent turn
-                self.board.grid[row][col] = EMPTY_CELL  # Backtrack to make the cell empty again
-                bestScore = max(score, bestScore)  # Track the max score
+        if isMaximizing:
+            bestScore = -math.inf
+            for row, col in self.board.get_empty_cells():
+                self.board.make_move(row, col, self.maximizer.symbol)
+                score = self.minimax(depth - 1, False)
+                self.board.grid[row][col] = EMPTY_CELL
+                bestScore = max(score, bestScore)
             return bestScore
-        else:  # Minimizer turn
-            bestScore = math.inf  # MAX_INT
-            for row, col in self.board.get_empty_cells():  # Iterate over all possible moves
-                self.board.make_move(row, col, self.minimizer.symbol)  # Make a move
-                score = self.minimax(depth - 1, True)  # Switch to the player turn
-                self.board.grid[row][col] = EMPTY_CELL  # Backtrack to make the cell empty again
-                bestScore = min(score, bestScore)  # Track the min score
+        else:
+            bestScore = math.inf
+            for row, col in self.board.get_empty_cells():
+                self.board.make_move(row, col, self.minimizer.symbol)
+                score = self.minimax(depth - 1, True)
+                self.board.grid[row][col] = EMPTY_CELL
+                bestScore = min(score, bestScore)
             return bestScore
 
 
@@ -98,7 +95,7 @@ class AlphaBeta:
                 self.board.grid[row][col] = EMPTY_CELL
                 alpha = max(alpha, value)
                 if beta <= alpha:
-                    break  # beta cut-off
+                    break
             return value
         else:
             value = math.inf
@@ -108,7 +105,7 @@ class AlphaBeta:
                 self.board.grid[row][col] = EMPTY_CELL
                 beta = min(beta, value)
                 if beta <= alpha:
-                    break  # alpha cut-off
+                    break
             return value
 
 
@@ -235,12 +232,11 @@ class GomokuGame:
                 print(f"Current player is AI ({self.current_player.ai_name})")
                 if self.current_player.ai_name == "minimax":
                     minimax = MiniMax(self.board, self.player1, self.player2)
-                    bestMove = minimax.getBestMove()  # Get the best move for the AI (minimax)
+                    bestMove = minimax.getBestMove()
                     print(f"AI ({self.current_player.symbol}) chooses move: {bestMove}")
-                    self.board.make_move(bestMove[0], bestMove[1], self.current_player.symbol)  # Make AI's move
+                    self.board.make_move(bestMove[0], bestMove[1], self.current_player.symbol)
 
                 elif self.current_player.ai_name == "alphabeta":
-                    # Implement Alpha-Beta logic here
                     alphabeta = AlphaBeta(self.board, self.player2, self.player1)
                     bestMove = alphabeta.getBestMove()
                     print(f"AI ({self.current_player.symbol}) chooses move: {bestMove}")
@@ -381,7 +377,7 @@ class Menu:
             tk.Radiobutton(self.board_size_window, text="Alpha-Beta", variable=self.ai_choice, value="alphabeta",
                            font=("Segoe UI", 12), bg="#1E88E5", fg="white", selectcolor="#1565C0").pack()
 
-        # 🚨 Pack the Start Game button LAST
+
         button = tk.Button(self.board_size_window, text=" Start Game ", font=("Segoe UI", 14, "bold"),
                            command=self.start_game, bg="white")
         button.pack(pady=15)
@@ -395,7 +391,6 @@ class Menu:
                 new_root = tk.Tk()
                 ai_mode = self.ai_choice.get() if self.selected_mode == "human_vs_ai" else None
                 GomokuGUI(new_root, board_size, self.selected_mode, ai_mode)
-                #GomokuGUI(new_root, board_size, self.selected_mode)  # Pass the board size to GomokuGUI
                 new_root.mainloop()
             else:
                 messagebox.showerror("Invalid Size", "Please enter a size between 5 and 20.")
@@ -412,9 +407,6 @@ class GomokuGUI:
         self.mode = mode
         self.ai_mode = ai_mode
         self.set_players(mode)
-        # self.player1 = Player('X')
-        # self.player2 = Player('O', is_ai=True, ai_name="minimax")
-        # self.current_player = self.player1
         self.buttons = [[None for _ in range(self.board_size)] for _ in range(self.board_size)]
         window_width = root.winfo_screenwidth()
         window_height = root.winfo_screenheight()
@@ -449,7 +441,7 @@ class GomokuGUI:
                 btn = tk.Button(self.board_frame, text=EMPTY_CELL, width=4, height=1,
                                 font=("Arial", 13, "bold"), bg="white", fg="black",
                                 relief="raised", bd=0,
-                                command=partial(self.cell_clicked, r, c),  # Using partial to bind the coordinates
+                                command=partial(self.cell_clicked, r, c),
                                 activebackground="lightblue", activeforeground="white")
                 btn.grid(row=r, column=c, padx=2, pady=2)
                 self.buttons[r][c] = btn
@@ -472,7 +464,6 @@ class GomokuGUI:
         self.root.after(500, self.minMax_move)
 
     def minMax_move(self):
-        # Check if it's AI's turn to move
         if self.current_player.is_ai:
             if self.current_player.ai_name == "minimax":
                 ai = MiniMax(self.board, self.player1, self.player2)
@@ -483,23 +474,19 @@ class GomokuGUI:
 
             bestMove = ai.getBestMove()
 
-            # Make the move on the board
             self.board.make_move(bestMove[0], bestMove[1], self.current_player.symbol)
             self.buttons[bestMove[0]][bestMove[1]]['text'] = self.current_player.symbol
 
-            # Update the color based on the player's symbol
             if self.current_player.symbol == 'X':
                 self.buttons[bestMove[0]][bestMove[1]]['fg'] = 'red'
             elif self.current_player.symbol == 'O':
                 self.buttons[bestMove[0]][bestMove[1]]['fg'] = 'green'
 
-            # Check if the game has ended after the move
             if self.check_game_end():
                 return
 
-            # Switch to the other player
             self.switch_turn()
-            # Proceed with the next AI move (if needed) after a short delay
+
             self.root.after(500, self.minMax_move)  # AI takes the next turn after a delay
 
     def switch_turn(self):
