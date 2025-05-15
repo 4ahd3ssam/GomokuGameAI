@@ -351,25 +351,40 @@ class Menu:
 
     def get_board_size(self, mode):
         self.selected_mode = mode
-        # to make child window
         self.board_size_window = tk.Toplevel(self.root)
         self.board_size_window.title("Enter Board Size")
 
         window_width = 400
-        window_height = 200
+        window_height = 250
         screen_width = self.root.winfo_screenwidth()
-        x_coordinate = (screen_width - window_width) // 2  # to center the window
+        x_coordinate = (screen_width - window_width) // 2
 
         self.board_size_window.geometry(f"{window_width}x{window_height}+{x_coordinate}+100")
         self.board_size_window.configure(bg="#1E88E5")
+
         label = tk.Label(self.board_size_window, text="Enter Board Size :", font=("Segoe UI", 14, "bold"), fg="white",
                          bg="#1E88E5")
-        label.pack(pady=20)
+        label.pack(pady=10)
+
         self.board_size_entry = tk.Entry(self.board_size_window, font=("Segoe UI", 14))
-        self.board_size_entry.pack(pady=10)
+        self.board_size_entry.pack(pady=5)
+
+        if self.selected_mode == "human_vs_ai":
+            self.ai_choice = tk.StringVar(value="minimax")
+
+            tk.Label(self.board_size_window, text="Choose AI Strategy:", font=("Segoe UI", 12, "bold"),
+                     fg="white", bg="#1E88E5").pack(pady=(10, 0))
+
+            tk.Radiobutton(self.board_size_window, text="Minimax", variable=self.ai_choice, value="minimax",
+                           font=("Segoe UI", 12), bg="#1E88E5", fg="white", selectcolor="#1565C0").pack()
+
+            tk.Radiobutton(self.board_size_window, text="Alpha-Beta", variable=self.ai_choice, value="alphabeta",
+                           font=("Segoe UI", 12), bg="#1E88E5", fg="white", selectcolor="#1565C0").pack()
+
+        # 🚨 Pack the Start Game button LAST
         button = tk.Button(self.board_size_window, text=" Start Game ", font=("Segoe UI", 14, "bold"),
                            command=self.start_game, bg="white")
-        button.pack(pady=10)
+        button.pack(pady=15)
 
     def start_game(self):
         try:
@@ -378,7 +393,9 @@ class Menu:
                 self.board_size_window.destroy()  # Close  board size window
                 self.root.destroy()  # Close  menu window
                 new_root = tk.Tk()
-                GomokuGUI(new_root, board_size, self.selected_mode)  # Pass the board size to GomokuGUI
+                ai_mode = self.ai_choice.get() if self.selected_mode == "human_vs_ai" else None
+                GomokuGUI(new_root, board_size, self.selected_mode, ai_mode)
+                #GomokuGUI(new_root, board_size, self.selected_mode)  # Pass the board size to GomokuGUI
                 new_root.mainloop()
             else:
                 messagebox.showerror("Invalid Size", "Please enter a size between 5 and 20.")
@@ -387,12 +404,13 @@ class Menu:
 
 
 class GomokuGUI:
-    def __init__(self, root, board_size, mode):
+    def __init__(self, root, board_size, mode, ai_mode=None):
         self.root = root
         self.board_size = board_size
         self.root.title("Gomoku Game")
         self.board = Board(self.board_size)
         self.mode = mode
+        self.ai_mode = ai_mode
         self.set_players(mode)
         # self.player1 = Player('X')
         # self.player2 = Player('O', is_ai=True, ai_name="minimax")
@@ -415,7 +433,7 @@ class GomokuGUI:
     def set_players(self, mode):
         if mode == "human_vs_ai":
             self.player1 = Player('X')  # human
-            self.player2 = Player('O', is_ai=True, ai_name="minimax")
+            self.player2 = Player('O', is_ai=True, ai_name=self.ai_mode or "minimax")
         elif mode == "ai_vs_ai":
             self.player1 = Player('X', is_ai=True, ai_name="minimax")
             self.player2 = Player('O', is_ai=True, ai_name="alphabeta")
