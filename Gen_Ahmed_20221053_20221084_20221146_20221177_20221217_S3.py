@@ -8,54 +8,56 @@ EMPTY_CELL = '.'
 
 
 class MiniMax:
-    def __init__(self, board, maximizer, minimizer, maxDepth=1):
-        self.board = board
-        self.maximizer = maximizer
-        self.minimizer = minimizer
-        self.maxDepth = maxDepth
+    def __init__(self, board, maximizer, minimizer, maxDepth = 1):
+        self.board = board # Instance of the current board state
+        self.maximizer = maximizer # Player 'O', trie to maximize their score
+        self.minimizer = minimizer # Opponent 'X', trie to minimze the maximizer score
+        self.maxDepth = maxDepth # Maximum number of moves to explore
 
     def getBestMove(self):
-        bestScore = -math.inf
+        bestScore = -math.inf # MIN_INT
         bestMove = None
 
-        for row, col in self.board.get_empty_cells():
-            self.board.make_move(row, col, self.maximizer.symbol)
-            score = self.minimax(self.maxDepth - 1, False)
-            self.board.grid[row][col] = EMPTY_CELL
+        for row, col in self.board.get_empty_cells(): # Iterate over all empty cells
+            self.board.make_move(row, col, self.maximizer.symbol) # Make move
+            score = self.minimax(self.maxDepth - 1, False) # Get the best
+            self.board.grid[row][col] = EMPTY_CELL  # Undo move
 
-            if score > bestScore:
+            if score > bestScore: # If this is the maximum score 
                 bestScore = score
-                bestMove = (row, col)
+                bestMove = (row, col) # Get its cell
 
-        return bestMove
+        return bestMove # return the best move for the maximizer
 
-
+    # Algorithm to determine the best move of a player
+    # Maximize the player score
+    # Minimze the opponent score
+    # Based on DFS "try all possible future moves", but limited to the depth 
     def minimax(self, depth, isMaximizing):
         # Base cases
-        if self.board.check_winner(self.maximizer.symbol):
+        if self.board.check_winner(self.maximizer.symbol): # If maximizer wins
             return 1
-        elif self.board.check_winner(self.minimizer.symbol):
+        elif self.board.check_winner(self.minimizer.symbol): # If minimizer wins
             return -1
-        elif depth == 0 or not self.board.get_empty_cells():  # If no more depth or the game is over
-            return self.board.evaluate(self.maximizer.symbol)
+        elif depth == 0 or not self.board.get_empty_cells(): # If no more depth or the game is over
+            return 0  # Draw or depth limit
 
-        if isMaximizing:
-            bestScore = -math.inf
-            for row, col in self.board.get_empty_cells():
-                self.board.make_move(row, col, self.maximizer.symbol)
-                score = self.minimax(depth - 1, False)
-                self.board.grid[row][col] = EMPTY_CELL
-                bestScore = max(score, bestScore)
+        if isMaximizing: # Maximizer turn
+            bestScore = -math.inf # MIN_INT
+            for row, col in self.board.get_empty_cells(): # Iterate over all possible moves
+                self.board.make_move(row, col, self.maximizer.symbol) # Make a move
+                score = self.minimax(depth - 1, False) # Switch to the opponent turn
+                self.board.grid[row][col] = EMPTY_CELL # Backtrack to make the cell empty again
+                bestScore = max(score, bestScore) # Track the max score 
             return bestScore
-        else:
-            bestScore = math.inf
-            for row, col in self.board.get_empty_cells():
-                self.board.make_move(row, col, self.minimizer.symbol)
-                score = self.minimax(depth - 1, True)
-                self.board.grid[row][col] = EMPTY_CELL
-                bestScore = min(score, bestScore)
+        else: # Minimizer turn
+            bestScore = math.inf # MAX_INT
+            for row, col in self.board.get_empty_cells(): # Iterate over all possible moves
+                self.board.make_move(row, col, self.minimizer.symbol) # Make a move
+                score = self.minimax(depth - 1, True) # Switch to the player turn
+                self.board.grid[row][col] = EMPTY_CELL # Backtrack to make the cell empty again
+                bestScore = min(score, bestScore) # Track the min score 
             return bestScore
-
 
 class AlphaBeta:
     def __init__(self, board, maximizer, minimizer, maxDepth=2):
